@@ -37,31 +37,22 @@ def load_data():
     # Skip rows to load into the df
     df_basic = pd.read_csv("./data/Districtwise_Basicdata.csv", skiprows=1)
     df_enroll = pd.read_csv("./data/Districtwise_Enrollment_details_indicator.csv", skiprows=3)
-    df_teacher = pd.read_csv("./data/Districtwise_Teacher_indicator.csv", skiprows=3)
-    return df_basic, df_enroll, df_teacher
+
+    return df_basic, df_enroll
 
 
-def team_alloc(df_b, df_e, df_t):
-    df_merge_basic_enroll = pd.DataFrame.merge(df_b, df_e, left_index=True, right_index=True)
-    df_merge_basic_teacher = pd.DataFrame.merge(df_b, df_t, left_index=True, right_index=True)
-    df_team_a = df_merge_basic_enroll.iloc[1:10:2]
-    df_team_b = df_merge_basic_enroll.iloc[2:11:2]
 
-
-def integrate_data(df_b, df_e, df_t):
+def integrate_data(df_b, df_e):
     df_b['unique_id'] = df_b.iloc[:, [0, 1, 3]].apply(lambda x: ",".join(x.dropna().astype(str)), axis=1)
     df_e['unique_id'] = df_e.iloc[:, [0, 1, 3]].apply(lambda x: ",".join(x.dropna().astype(str)), axis=1)
-    df_t['unique_id'] = df_t.iloc[:, [4, 0, 2]].apply(lambda x: ",".join(x.dropna().astype(str)), axis=1)
 
     # Assign index
     df_b.set_index('unique_id', inplace=True)
     df_e.set_index('unique_id', inplace=True)
-    df_t.set_index('unique_id', inplace=True)
 
     df_merge_b_e = pd.merge(df_b, df_e, on=['unique_id'], suffixes=('_b', '_e'))
-    df_merge_b_e_t = pd.merge(df_merge_b_e, df_t, on=['unique_id'], suffixes=('_b_e', '_t'))
 
-    return df_merge_b_e_t
+    return df_merge_b_e
 
 
 def clean_up_date(df_i):
@@ -110,9 +101,9 @@ def clean_up_date(df_i):
     df_i['Rep C6'].fillna(df_i['Rep C6'].median(), inplace=True)
 
     # Drop columns which does not have significance
-    df_i.drop(['Year_b', 'statename_b_e', 'distname_b', 'overall_lit', 'Year_e', 'Statecd_e', 'State Name ',
+    df_i.drop(['Year_b', 'distname_b', 'overall_lit', 'Year_e', 'Statecd_e', 'State Name ',
                'distcd_e', 'distname_e', 'Gerp Py2', 'Gerp Py1', 'Gerup Py2', 'Gerup Py1', 'Nerp Py1',
-               'Nerp Py2', 'Nerup Py1', 'Nerup Py2', 'Statecd_b', 'statename_t', 'distcd_b', 'distname', 'ac_year'],
+               'Nerp Py2', 'Nerup Py1', 'Nerup Py2', 'Statecd_b', 'distcd_b', 'distname_e', 'statename'],
               axis=1, inplace=True)
 
     return df_i
@@ -172,10 +163,9 @@ def try_classifier(X_train, X_test, y_train, y_test, classifier_type):
 if __name__ == '__main__':
     pd_set_df_view_options()
     # download_data()
-    df_b, df_e, df_t = load_data()
-    team_alloc(df_b, df_e, df_t)
+    df_b, df_e = load_data()
     # integrate the data frames
-    df_integrated = integrate_data(df_b, df_e, df_t)
+    df_integrated = integrate_data(df_b, df_e)
     # clean the data. Remove nan and null. Remove columns which are not relevant
     df_cleaned = clean_up_date(df_integrated)
     # remove correlated columns
@@ -185,4 +175,4 @@ if __name__ == '__main__':
     score = try_classifier(df_train_X, df_test_X, y_train, y_test, KNN_CLASSIFIER)
     # Decision Tree has more than 0.9 accuracy
     score = try_classifier(df_train_X, df_test_X, y_train, y_test, DECISION_TREE_CLASSIFIER)
-    print("Done")
+
